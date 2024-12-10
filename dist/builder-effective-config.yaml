@@ -1,0 +1,11 @@
+directories:
+  output: dist
+  buildResources: build
+appId: com.example.cde
+files:
+  - filter:
+      - build/**/*
+      - main.js
+win:
+  target: nsis
+electronVersion: 32.2.0

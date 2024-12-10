@@ -1,0 +1,617 @@
+// File: src/Api.js
+import axios from "axios"
+import { LANGUAGAE_VERSIONS } from "./constants"
+
+const API = axios.create({
+    baseURL: "https://emkc.org/api/v2/piston"
+})
+export const executeCode = async (language, sourceCode) => {
+
+    const response = await API.post("/execute", {
+        "language": language,
+        "version": LANGUAGAE_VERSIONS[language],
+        "files": [
+            {
+                
+                "content": sourceCode
+            }
+        ],
+    });
+    return response.data;
+
+}
+// File: src/App.jsx
+import 'bootstrap/dist/css/bootstrap.min.css';
+import { Box, Code } from "@chakra-ui/react";
+import CodeEditor from "./components/CodeEditor";
+import Home from "./components/Home";
+import { Routes, Route } from "react-router-dom";
+import { ChakraProvider } from '@chakra-ui/react';
+import theme from "./theme.js";
+import { Toaster } from 'react-hot-toast';
+
+
+function App() {
+  return (
+
+    <>
+
+    
+    <Toaster position='top-center'></Toaster>
+    <Routes>
+      <Route path="/" element={<Home />} />
+
+      <Route path="/Editor/:roomId" element={ <ChakraProvider theme={theme}> <Box minH="100vh" bg="#0f0a19" color="gray.500"  px={6} py={8}  ><CodeEditor /> </Box></ChakraProvider>} />
+
+    </Routes>
+
+    </>
+    
+
+  );
+
+}
+
+export default App;
+
+// File: src/components/Client.jsx
+import React from 'react'
+import Avatar from 'react-avatar';
+
+const Client = ({username}) => {
+  return (
+    <div className='flex items-center mb-3'>
+
+        <Avatar name={username.toString() } size={50} round="14px" 
+        className='mr-3 p-4'
+        />
+
+        <span className='mx-2 p-2 text-xl'>{username.toString()}</span>
+      
+    </div>
+  )
+}
+
+export default Client
+
+// File: src/components/CodeEditor.jsx
+import { Box, ChakraProvider, HStack } from '@chakra-ui/react'
+import { React, useRef, useState, useEffect } from 'react'
+import { Editor } from '@monaco-editor/react'
+import LanguageSelector from './LanguageSelector'
+import { CODE_SNIPPETS } from '../constants'
+import Output from './Output'
+import UserDisplay from './UsersDisplay'
+import 'bootstrap/dist/css/bootstrap.min.css';
+import Client from './client'
+import { useNavigate, useLocation, useParams, Navigate } from 'react-router-dom'
+import { initSocket } from '../socket'
+import toast from 'react-hot-toast'
+import { throttle } from 'lodash'
+import { jwtDecode } from "jwt-decode";
+
+
+
+
+const CodeEditor = () => {
+
+    const [clients, setclients] = useState([]);
+    const editorRef = useRef()
+    const valueRef = useRef('');
+    const [value, setvalue] = useState("");
+    const [language, setlanguage] = useState('javascript')
+    const codeRef = useRef(null);
+    const socketRef = useRef(null)
+    const location = useLocation();
+    const { roomId } = useParams();
+    const navigate = useNavigate();
+
+
+    const saveToken = async () => {
+
+        const req = await fetch('http://localhost:5000/api/quote', {
+            headers: {
+                'x-access-token': localStorage.getItem('token'),
+            },
+        })
+
+        const data = await req.json()
+        console.log(data);
+
+    }
+
+
+
+
+    useEffect(() => {
+
+
+// File: src/components/Home.jsx
+import {React, useState} from 'react'
+import 'bootstrap/dist/css/bootstrap.min.css';
+import {v4 as uuid} from 'uuid';
+import toast from 'react-hot-toast';
+import { useNavigate } from 'react-router-dom';
+
+
+const Home = () => {
+  const [roomId, setroomId] = useState("");
+  const [username, setusername] = useState("");
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [role, setRole] = useState('')
+  const navigate = useNavigate();
+
+  const handleChange = (e) => {
+    setroomId(e.target.value);
+    
+  }
+  
+
+  const generateRoomId = (e) => {
+
+    e.preventDefault();
+    const id = uuid();
+    setroomId(id);
+    toast.success("Room Id is Generated Successfully")
+
+    
+  }
+
+  const registerUser = async (e)=>{
+    e.preventDefault()
+
+    
+    
+    const response = await fetch('http://localhost:5000/api/register',{
+
+      method: 'POST',
+
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        roomId,
+        username, 
+        email, 
+        password,
+        role
+      }),
+
+// File: src/components/LanguageSelector.jsx
+import { Box, Menu, MenuButton, MenuItem, MenuList, Text, Button } from '@chakra-ui/react'
+import React from 'react'
+import { LANGUAGAE_VERSIONS } from '../constants';
+import { color } from 'framer-motion';
+const ACTIVE_COLOR = "blue.400";
+
+const Languages = Object.entries(LANGUAGAE_VERSIONS);
+
+const LanguageSelector = ({language, onSelect}) => {
+    return (
+        <Box ml={2} mb={4}>
+            <Text mb={2} fontSize="2xl" >Language</Text>
+            <Menu isLazy>
+                <MenuButton as={Button} fontSize={"xl"} py={6}>
+                    {language}
+                </MenuButton>
+                <MenuList bg={'#110c1b'}>
+                {Languages.map(([lang, version]) => (
+                    <MenuItem key={lang}
+                    color={
+                        lang === language ? "ACTIVE_COLOR" : ""
+                    }
+                    bg={
+                        lang === language ? "gray.900" : "transparent"
+                    }
+                    _hover={{
+                        color: ACTIVE_COLOR,
+                        bg: "gray.900"
+                    }}
+                    onClick={() => { onSelect(lang)}}>{lang}
+                    &nbsp;
+                    <Text as="span" color="gray.500" fontSize="sm" >({version})</Text>
+
+                    </MenuItem>
+                    ))}
+
+
+                </MenuList>
+            </Menu>
+        </Box>
+    )
+}
+
+export default LanguageSelector
+
+// File: src/components/Output.jsx
+import { Box, useToast } from '@chakra-ui/react'
+import { React, useState } from 'react'
+import { Button, Text } from '@chakra-ui/react'
+import CodeEditor from './CodeEditor'
+import { executeCode } from '../Api'
+
+const Output = ({editorRef, language}) => {
+    const toast = useToast();
+    const [output, setoutput] = useState(null);
+    const [isLoading, setisLoading] = useState(false);
+    const [isError, setisError] = useState(false)
+
+    const runCode = async () => {
+        const sourceCode = editorRef.current.getValue();
+        // console.log(sourceCode);
+        if(!sourceCode) return;
+        try{
+            setisLoading(true);
+            const {run: result} = await executeCode(language, sourceCode)
+            setoutput(result.output.split("\n"));
+            result.stderr ? setisError(true) : setisError(false);
+
+        }
+        catch(error){
+            console.log(error);
+            toast({
+                title: "An error occurred",
+                description: error.message || "unable to run code",
+                status: "error",
+                duration: 6000
+            })
+
+        }
+        finally{
+            setisLoading(false);
+        }
+
+      
+    }
+    
+  return (
+    <Box w='50%'>
+        <Text mb ={2} fontSize='2xl' >Output</Text>
+        <Button isLoading={isLoading} onClick={runCode} variant = 'outline' fontSize={"2xl"}  py={6}
+        colorScheme = "green" 
+        >Run Code</Button>
+
+        <Box
+        height='85vh'
+        p={2}
+
+// File: src/components/UsersDisplay.jsx
+import { Box, Text, Avatar, Stack } from '@chakra-ui/react';
+import React from 'react';
+
+const UserDisplay = () => {
+    // Sample user avatars
+    const avatars = [
+        'https://bit.ly/sage-adebayo',
+        'https://bit.ly/prosper-baba',
+        'https://bit.ly/ryan-florence',
+        // Add more avatar URLs as needed
+    ];
+
+    return (
+        <Box
+            position="absolute"
+            top={0}
+            right={0}
+            bg="#0f0a19"
+            p={3} // Adjust padding
+            borderBottom="1px solid"
+            borderColor="gray.700"
+            textAlign="center"
+            zIndex={10}
+            width="auto" // Adjust width
+            maxWidth="300px" // Limit the maximum width
+            display="flex"
+            flexDirection="column" // Arrange text and avatars vertically
+            alignItems="center"
+            boxShadow="md" // Add subtle shadow for better separation
+        >
+            <Text 
+                color="white" 
+                fontSize="lg" // Font size to keep it readable
+                fontWeight="bold"
+                mb={2} // Margin bottom for spacing
+            >
+                Users
+            </Text>
+            <Stack direction="row" spacing={-2} align="center">
+                {avatars.map((src, index) => (
+                    <Avatar key={index} size="sm" src={src} /> // Avatar size
+                ))}
+            </Stack>
+        </Box>
+    );
+};
+
+export default UserDisplay;
+
+// File: src/constants.js
+export const LANGUAGAE_VERSIONS = {
+    javascript: "18.15.0",
+    typescript: "5.0.4",
+    python: "3.10.0",
+    java: "15.0.2",
+    csharp: "6.12.0",
+    php: "8.2.3",
+
+}
+
+export const CODE_SNIPPETS = {
+    javascript: `\nfunction sayhello(name){ \n\t console.log("Hello, " + name + "!"); \n}\n sayhello("Shardul");\n`,
+    typescript: `
+    function sayHello(name: string): void {
+    console.log(\`Hello, \${name}!\`);
+    }
+    sayHello("Shardul");`,
+    python: `
+    def say_hello(name):
+        print(f"Hello, {name}!")
+    
+    say_hello("Shardul")
+      `,
+    java: `
+    public class Main {
+    public static void main(String[] args) {
+        sayHello("Shardul");
+    }
+
+    public static void sayHello(String name) {
+        System.out.println("Hello, " + name + "!");
+    }
+   }`,
+   csharp: `
+   using System;
+   
+   class Program {
+       static void Main() {
+           SayHello("Shardul");
+       }
+   
+       static void SayHello(string name) {
+           Console.WriteLine("Hello, " + name + "!");
+       }
+   }
+     `,
+
+     php: `
+     <?php
+     function sayHello($name) {
+
+// File: src/index.css
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+/* Add this to your custom CSS file */
+.custom-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: #888 #0f0a19; /* #888 for the thumb, #0f0a19 for the track */
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 8px;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: #0f0a19; /* Dark background for the track */
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background-color: #888; /* Light grey color for the thumb */
+    border-radius: 10px;
+    border: 2px solid #0f0a19; /* Same as the track background */
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background-color: #555; /* Darker grey for hover effect */
+  }
+  
+// File: src/main.jsx
+import React from "react";
+import ReactDOM from "react-dom/client";
+import App from "./App.jsx";
+import 'bootstrap/dist/css/bootstrap.min.css';
+import './index.css'
+
+import { BrowserRouter as Router } from "react-router-dom";
+
+
+
+ReactDOM.createRoot(document.getElementById("root")).render(
+
+  <Router>
+   
+      <App />
+    
+  </Router>
+);
+
+// File: src/socket.js
+import {io} from "socket.io-client"
+
+export const initSocket = async()=>{
+    const option = {
+        'force new connection': true,
+        reconnectionAttempt: 'infinity',
+        timeout: 10000,
+        transports: ['websocket'],
+        
+    };
+    return io(import.meta.env.VITE_BACKEND_URL, option);
+}
+// File: src/theme.js
+// theme.js
+import { extendTheme } from "@chakra-ui/react";
+
+const customTheme = extendTheme({
+  colors: {
+    gray: {
+      50: "#f7fafc",
+      100: "#edf2f7",
+      200: "#e2e8f0",
+      300: "#cbd5e0",
+      400: "#a0aec0",
+      500: "#718096",
+      600: "#4a5568",
+      700: "#2d3748",
+      800: "#1a202c",
+      900: "#171923",
+    },
+  },
+  styles: {
+    global: {
+      body: {
+        bg: "#0f0a19",
+        color: "gray.500",
+      },
+    },
+  },
+});
+
+export default customTheme;
+
+// File: server/index.js
+const express = require("express");
+const app = express();
+const http = require('http');
+const cors = require('cors');
+const mongoose = require('mongoose')
+app.use(cors())
+
+//User Authentication Code
+
+const User = require('./models/user.model');
+const jwt = require('jsonwebtoken');
+
+
+
+
+mongoose.connect('mongodb://localhost:27017/CDE', {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+}).then(() => console.log('MongoDB connected'))
+    .catch(err => console.log(err));
+
+
+app.use(express.json())
+
+app.get('/hello', (requ, res) => {
+    res.send('hello world')
+})
+
+app.post('/api/register', async (requ, res) => {
+    try {
+        const { 
+            username,
+            email,
+            password,
+             } = requ.body;
+        await User.create({
+            
+            username,
+            email,
+            password,
+            
+        })
+        res.json({ status: 'ok', user: true, message: 'Registered Successfully' })
+
+
+        console.log(requ.body);
+
+
+    }
+
+
+// File: server/models/user.model.js
+const mongoose = require('mongoose')
+
+const User = new mongoose.Schema(
+{
+    username: {type: String, required: true},
+    email: {type: String, required:true, unique: true},
+    password: {type: String, require: true},
+    quote: {type: String},
+},
+{
+    collection: 'user-data' 
+}
+
+
+)
+
+const model = mongoose.model('UserData', User)
+
+module.exports = model
+// File: server/package-lock.json
+{
+  "name": "server",
+  "version": "1.0.0",
+  "lockfileVersion": 3,
+  "requires": true,
+  "packages": {
+    "": {
+      "name": "server",
+      "version": "1.0.0",
+      "license": "ISC",
+      "dependencies": {
+        "cors": "^2.8.5",
+        "express": "^4.19.2",
+        "jsonwebtoken": "^9.0.2",
+        "mongoose": "^8.7.0",
+        "socket.io": "^4.7.5"
+      }
+    },
+    "node_modules/@mongodb-js/saslprep": {
+      "version": "1.1.9",
+      "resolved": "https://registry.npmjs.org/@mongodb-js/saslprep/-/saslprep-1.1.9.tgz",
+      "integrity": "sha512-tVkljjeEaAhCqTzajSdgbQ6gE6f3oneVwa3iXR6csiEwXXOFsiC6Uh9iAjAhXPtqa/XMDHWjjeNH/77m/Yq2dw==",
+      "dependencies": {
+        "sparse-bitfield": "^3.0.3"
+      }
+    },
+    "node_modules/@socket.io/component-emitter": {
+      "version": "3.1.2",
+      "resolved": "https://registry.npmjs.org/@socket.io/component-emitter/-/component-emitter-3.1.2.tgz",
+      "integrity": "sha512-9BCxFwvbGg/RsZK9tjXd8s4UcwR0MWeFQ1XEKIQVVvAGJyINdrqKMcTRyLoK8Rse1GjzLV9cwjWV1olXRWEXVA=="
+    },
+    "node_modules/@types/cookie": {
+      "version": "0.4.1",
+      "resolved": "https://registry.npmjs.org/@types/cookie/-/cookie-0.4.1.tgz",
+      "integrity": "sha512-XW/Aa8APYr6jSVVA1y/DEIZX0/GMKLEVekNG727R8cs56ahETkRAy/3DR7+fJyh7oUgGwNQaRfXCun0+KbWY7Q=="
+    },
+    "node_modules/@types/cors": {
+      "version": "2.8.17",
+      "resolved": "https://registry.npmjs.org/@types/cors/-/cors-2.8.17.tgz",
+      "integrity": "sha512-8CGDvrBj1zgo2qE+oS3pOCyYNqCPryMWY2bGfwA0dcfopWGgxs+78df0Rs3rc9THP4JkOhLsAa+15VdpAqkcUA==",
+      "dependencies": {
+        "@types/node": "*"
+      }
+    },
+    "node_modules/@types/node": {
+      "version": "22.5.0",
+      "resolved": "https://registry.npmjs.org/@types/node/-/node-22.5.0.tgz",
+      "integrity": "sha512-DkFrJOe+rfdHTqqMg0bSNlGlQ85hSoh2TPzZyhHsXnMtligRWpxUySiyw8FY14ITt24HVCiQPWxS3KO/QlGmWg==",
+      "dependencies": {
+        "undici-types": "~6.19.2"
+
+// File: server/package.json
+{
+  "name": "server",
+  "version": "1.0.0",
+  "description": "This is Collaborative development Environment",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "nodemon index.js"
+  },
+  "author": "Shardul Kulkarni",
+  "license": "ISC",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.19.2",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.7.0",
+    "socket.io": "^4.7.5"
+  }
+}
+
